@@ -38,8 +38,10 @@ export interface Opportunity {
   externalUrl?: string;
   morphoStrategy?: MorphoStrategy;
   pendleType?: PendleType;
-  /** True when apy/tvl/maturityLabel were overridden by a live API fetch this request. */
+  /** True when apy/maturityLabel were overridden by a live API fetch this request. */
   isLive?: boolean;
+  /** True when tvl was overridden by a live source, independent of APY liveness. */
+  isTvlLive?: boolean;
   /** Morpho isolated markets only — the live cost to borrow against this collateral. */
   borrowApy?: number;
   /** Looping strategies only — the leverage multiple the quoted APY assumes. */

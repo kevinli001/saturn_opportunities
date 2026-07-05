@@ -4,6 +4,7 @@ import { getPendleLiveData, PENDLE_ID_MAP } from "./live/pendle";
 import { getCurveLiveData } from "./live/curve";
 import { getMorphoLiveData } from "./live/morpho";
 import { getHoldAprLiveData } from "./live/holdApr";
+import { getPancakeLiveData } from "./live/pancakeswap";
 
 // Looping recursively deposits an asset (a PT, or sUSDat itself) as
 // collateral, borrows against it, and buys more of the asset to lever up
@@ -54,6 +55,7 @@ function withLiveApy(
     maxDrop: options?.maxDrop ?? opportunity.maxDrop,
     historicalYield,
     isLive: options?.isLive ?? true,
+    isTvlLive: true,
   };
 }
 
@@ -63,11 +65,12 @@ function withLiveApy(
  * silently keeps its static value from mock-data.ts — this never throws.
  */
 export async function getOpportunities(): Promise<Opportunity[]> {
-  const [pendle, curve, morpho, holdApr] = await Promise.all([
+  const [pendle, curve, morpho, holdApr, pancake] = await Promise.all([
     getPendleLiveData(),
     getCurveLiveData(),
     getMorphoLiveData(),
     getHoldAprLiveData(),
+    getPancakeLiveData(),
   ]);
 
   const merged = staticOpportunities.map((opportunity) => {
@@ -98,6 +101,11 @@ export async function getOpportunities(): Promise<Opportunity[]> {
     const holdLive = holdApr.get(opportunity.id);
     if (holdLive) {
       return withLiveApy(opportunity, holdLive.apy, { tvl: holdLive.tvl });
+    }
+
+    const pancakeLive = pancake.get(opportunity.id);
+    if (pancakeLive) {
+      return { ...opportunity, tvl: pancakeLive.tvl, isTvlLive: true };
     }
 
     return opportunity;

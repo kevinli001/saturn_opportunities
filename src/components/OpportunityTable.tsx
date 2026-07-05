@@ -5,6 +5,7 @@ import { RiskBadge } from "./RiskBadge";
 import { LiveBadge } from "./LiveBadge";
 
 function ApyValue({ value, isLive }: { value: number; isLive?: boolean }) {
+  if (!value) return <span className="text-muted">—</span>;
   return (
     <div className="flex items-center gap-2">
       <span className="font-tabular font-bold text-primary">{formatApy(value)}</span>
@@ -133,7 +134,7 @@ export function OpportunityTable({
               )}
               {showTvl && (
                 <CardRow label="TVL">
-                  {o.isLive ? (
+                  {o.isTvlLive ? (
                     <div className="flex items-center gap-2">
                       <span className="font-tabular font-bold text-primary">{formatUsd(o.tvl)}</span>
                       <LiveBadge isLive />
@@ -205,7 +206,7 @@ export function OpportunityTable({
                 )}
                 {showTvl && (
                   <td className="px-4 py-3">
-                    {o.isLive ? (
+                    {o.isTvlLive ? (
                       <div className="flex items-center gap-2">
                         <span className="font-tabular font-bold text-primary">{formatUsd(o.tvl)}</span>
                         <LiveBadge isLive />
