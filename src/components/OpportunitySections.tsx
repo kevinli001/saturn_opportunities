@@ -24,12 +24,16 @@ function Subgroup({
   showBorrowApy = false,
   showLeverage = false,
   showTvl = false,
+  showSpread = false,
+  showMaxDrop = false,
 }: {
   label: string;
   items: Opportunity[];
   showBorrowApy?: boolean;
   showLeverage?: boolean;
   showTvl?: boolean;
+  showSpread?: boolean;
+  showMaxDrop?: boolean;
 }) {
   return (
     <div>
@@ -41,6 +45,8 @@ function Subgroup({
         showBorrowApy={showBorrowApy}
         showLeverage={showLeverage}
         showTvl={showTvl}
+        showSpread={showSpread}
+        showMaxDrop={showMaxDrop}
       />
     </div>
   );
@@ -82,7 +88,7 @@ export function OpportunitySections({
 
       <section>
         <SectionHeading
-          title="Curve / PancakeSwap opportunities"
+          title="Curve / PancakeSwap Opportunities"
           description="Provide liquidity on Curve or PancakeSwap to earn trading fees, base APR, and incentives."
         />
         <OpportunityTable items={curvePancake} showTvl />
@@ -90,7 +96,7 @@ export function OpportunitySections({
 
       <section>
         <SectionHeading
-          title="Pendle opportunities"
+          title="Pendle Opportunities"
           description="Lock in a fixed rate with a Principal Token (PT), or provide liquidity (LP) for variable fees plus points."
         />
         <div className="space-y-6">
@@ -101,11 +107,11 @@ export function OpportunitySections({
 
       <section>
         <SectionHeading
-          title="Morpho: looping + lending"
+          title="Morpho: Looping + Lending"
           description="Supply USDC to Saturn's Morpho vault and markets, or run a leveraged loop with Saturn's assets."
         />
         <div className="space-y-6">
-          <Subgroup label="Looping" items={morphoLooping} showLeverage />
+          <Subgroup label="Looping" items={morphoLooping} showSpread showMaxDrop />
           <Subgroup label="Lending" items={morphoLending} showBorrowApy showTvl />
         </div>
       </section>

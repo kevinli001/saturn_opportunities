@@ -44,4 +44,8 @@ export interface Opportunity {
   borrowApy?: number;
   /** Looping strategies only — the leverage multiple the quoted APY assumes. */
   leverage?: number;
+  /** Looping strategies only — the unleveraged edge: base asset APY minus borrow APY. */
+  spreadApy?: number;
+  /** Looping strategies only — max collateral price drop (%) before liquidation. */
+  maxDrop?: number;
 }

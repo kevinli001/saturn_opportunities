@@ -25,6 +25,8 @@ function withLiveApy(
     maturityLabel?: string;
     borrowApy?: number;
     leverage?: number;
+    spreadApy?: number;
+    maxDrop?: number;
     isLive?: boolean;
   },
 ): Opportunity {
@@ -48,6 +50,8 @@ function withLiveApy(
     maturityLabel: options?.maturityLabel ?? opportunity.maturityLabel,
     borrowApy: options?.borrowApy ?? opportunity.borrowApy,
     leverage: options?.leverage ?? opportunity.leverage,
+    spreadApy: options?.spreadApy ?? opportunity.spreadApy,
+    maxDrop: options?.maxDrop ?? opportunity.maxDrop,
     historicalYield,
     isLive: options?.isLive ?? true,
   };
@@ -112,10 +116,20 @@ export async function getOpportunities(): Promise<Opportunity[]> {
     }
 
     const { leverage } = loopCfg;
+    const spreadApy = assetApySource.apy - morphoMarket.borrowApy;
     const apy = leverage * assetApySource.apy - (leverage - 1) * morphoMarket.borrowApy;
+
+    const morphoLive = morpho.get(loopCfg.morphoId);
+    const lltv = morphoLive?.lltv;
+    const maxDrop = typeof lltv === "number"
+      ? Math.round((1 - (leverage - 1) / (leverage * lltv)) * 10000) / 100
+      : undefined;
+
     return withLiveApy(opportunity, apy, {
       tvl: opportunity.tvl,
       leverage,
+      spreadApy: Math.round(spreadApy * 100) / 100,
+      maxDrop,
       isLive: Boolean(assetApySource.isLive && morphoMarket.isLive),
     });
   });

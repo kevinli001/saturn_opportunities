@@ -56,6 +56,7 @@ const MARKETS_QUERY = `
       where: { chainId_in: [1], collateralAssetAddress_in: $collateralAddresses }
     ) {
       items {
+        lltv
         collateralAsset { address symbol }
         loanAsset { symbol }
         state {
@@ -92,9 +93,11 @@ export interface MorphoLiveEntry {
   apy: number;
   borrowApy?: number;
   tvl?: number;
+  lltv?: number;
 }
 
 interface MorphoMarketItem {
+  lltv?: string;
   collateralAsset?: { address?: string; symbol?: string };
   loanAsset?: { symbol?: string };
   state?: {
@@ -147,6 +150,11 @@ async function postGraphQL<T>(query: string, variables?: object): Promise<T | nu
   }
 }
 
+function parseLltv(raw?: string): number | undefined {
+  if (!raw) return undefined;
+  return Number(BigInt(raw)) / 1e18;
+}
+
 async function getMarketsData(): Promise<Map<string, MorphoLiveEntry>> {
   const best = new Map<string, MorphoLiveEntry & { supplyUsd: number }>();
   const collateralAddresses = [
@@ -177,6 +185,7 @@ async function getMarketsData(): Promise<Map<string, MorphoLiveEntry>> {
         best.set(id, {
           apy: round2(supplyApy * 100),
           borrowApy: typeof borrowApy === "number" ? round2(borrowApy * 100) : undefined,
+          lltv: parseLltv(item.lltv),
           tvl: supplyUsd,
           supplyUsd,
         });
@@ -186,7 +195,7 @@ async function getMarketsData(): Promise<Map<string, MorphoLiveEntry>> {
 
   const map = new Map<string, MorphoLiveEntry>();
   for (const [id, entry] of best) {
-    map.set(id, { apy: entry.apy, borrowApy: entry.borrowApy, tvl: entry.tvl });
+    map.set(id, { apy: entry.apy, borrowApy: entry.borrowApy, lltv: entry.lltv, tvl: entry.tvl });
   }
   return map;
 }
