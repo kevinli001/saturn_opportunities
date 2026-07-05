@@ -4,6 +4,8 @@ import { HeroBand } from "@/components/HeroBand";
 import { OpportunitySections } from "@/components/OpportunitySections";
 import { getOpportunities } from "@/lib/live-data";
 
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "Opportunities — Saturn",
 };
