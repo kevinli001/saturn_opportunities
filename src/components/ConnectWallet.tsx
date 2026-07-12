@@ -62,14 +62,14 @@ function WalletModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-ink p-8 text-white shadow-xl">
+      <div className="w-full max-w-md rounded-2xl bg-surface p-8 text-foreground shadow-xl">
         <span className="mb-4 inline-flex h-1.5 w-8 rounded-full bg-primary" />
         <h2 className="text-2xl font-bold">{title}</h2>
-        <p className="mt-2 text-sm text-white/60">{subtitle}</p>
+        <p className="mt-2 text-sm text-muted">{subtitle}</p>
 
         {address && (
-          <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-4">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-white/50">
+          <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-muted">
               Connected wallet
             </span>
             <span className="font-tabular text-sm font-bold">
@@ -78,7 +78,7 @@ function WalletModal({
           </div>
         )}
 
-        <p className="mt-5 text-sm leading-relaxed text-white/70">{body}</p>
+        <p className="mt-5 text-sm leading-relaxed text-muted">{body}</p>
 
         {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
@@ -86,7 +86,7 @@ function WalletModal({
           <button
             onClick={onSecondary}
             disabled={busy}
-            className="rounded-full border border-white/20 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-white/10 disabled:opacity-50"
+            className="rounded-full border border-border px-5 py-2.5 text-sm font-bold text-foreground transition-colors hover:bg-surface-2 disabled:opacity-50"
           >
             {secondaryLabel}
           </button>
