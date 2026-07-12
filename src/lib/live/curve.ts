@@ -24,7 +24,8 @@
 const CURVE_PRICES_API = "https://prices.curve.finance/v1/pools/ethereum";
 
 export interface CurveLiveEntry {
-  apy: number;
+  /** Omitted when the pool's reported APR fails the sanity check (thin-pool glitch). */
+  apy?: number;
   tvl: number;
 }
 
@@ -82,14 +83,15 @@ export async function getCurveLiveData(): Promise<Map<string, CurveLiveEntry>> {
   );
 
   for (const [id, pool] of entries) {
-    if (!pool) continue;
+    if (!pool || typeof pool.tvl_usd !== "number") continue;
+    // TVL is always live when present. The APY is only included when it passes
+    // the sanity check — a thin pool's glitched APR is dropped so the row falls
+    // back to its static estimate while still showing the real live TVL.
     const apyFraction = pickApyFraction(pool);
-    if (typeof apyFraction === "number" && typeof pool.tvl_usd === "number") {
-      map.set(id, {
-        apy: round2(apyFraction * 100),
-        tvl: Math.round(pool.tvl_usd),
-      });
-    }
+    map.set(id, {
+      apy: typeof apyFraction === "number" ? round2(apyFraction * 100) : undefined,
+      tvl: Math.round(pool.tvl_usd),
+    });
   }
 
   return map;

@@ -87,7 +87,12 @@ export async function getOpportunities(): Promise<Opportunity[]> {
 
     const curveLive = curve.get(opportunity.id);
     if (curveLive) {
-      return withLiveApy(opportunity, curveLive.apy, { tvl: curveLive.tvl });
+      if (typeof curveLive.apy === "number") {
+        return withLiveApy(opportunity, curveLive.apy, { tvl: curveLive.tvl });
+      }
+      // APY was a thin-pool glitch and got dropped; keep the static estimate
+      // but still surface the real live TVL.
+      return { ...opportunity, tvl: curveLive.tvl, isTvlLive: true };
     }
 
     const morphoLive = morpho.get(opportunity.id);
