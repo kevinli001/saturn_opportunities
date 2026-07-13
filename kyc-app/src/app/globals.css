@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f4f5;
+  --surface: #ffffff;
+  --surface-2: #f7f7f8;
+  --border: #e4e4e7;
+  --foreground: #101113;
+  --muted: #85888f;
+  --ink: #0b0b0c;
+
+  /* Saturn brand */
+  --primary: #ff5100;
+  --primary-foreground: #ffffff;
+  --secondary: #12857a;
+  --secondary-foreground: #ffffff;
+
+  --success: #12857a;
+  --warning: #d97a1a;
+  --danger: #c22b3f;
+
+  --font-sans: var(--font-suisse), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-ink: var(--ink);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-sans);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 25%, transparent);
+  color: var(--foreground);
+}
+
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.tick-ruler {
+  height: 9px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--primary) 0,
+    var(--primary) 1px,
+    transparent 1px,
+    transparent 24px
+  );
+  opacity: 0.9;
+}
