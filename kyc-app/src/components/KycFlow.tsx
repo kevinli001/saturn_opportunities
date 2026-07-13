@@ -186,7 +186,7 @@ export function KycFlow({
 
         instance = snsWebSdk
           .init(token, () => getToken(address))
-          .withConf({ lang: "en" })
+          .withConf({ lang: "en", theme: "light" })
           .withOptions({ addViewportTag: false, adaptIframeHeight: true })
           .onMessage((type: string) => {
             if (
