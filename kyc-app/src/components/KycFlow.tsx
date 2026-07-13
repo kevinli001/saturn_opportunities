@@ -1,83 +1,39 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useDynamicContext, useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
 import { FramedButton } from "./FramedButton";
-
-interface EthereumProvider {
-  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-}
-
-declare global {
-  interface Window {
-    ethereum?: EthereumProvider;
-  }
-}
 
 interface LaunchedSdk {
   launch: (container: string | HTMLElement) => void;
   destroy: () => void;
 }
 
-type Phase =
-  | "connect"
-  | "connecting"
-  | "verify"
-  | "verifying"
-  | "checking"
-  | "kyc"
-  | "onboarded"
-  | "error";
-
-function truncateAddress(a: string): string {
-  return `${a.slice(0, 6)}…${a.slice(-4)}`;
-}
-
-function randomNonce(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-/** EIP-4361 (Sign-In with Ethereum) formatted message. */
-function buildSignMessage(address: string, chainId: number): string {
-  const domain = window.location.host;
-  const uri = window.location.origin;
-  const issuedAt = new Date();
-  const expirationTime = new Date(issuedAt.getTime() + 10 * 60 * 1000);
-
-  return [
-    `${domain} wants you to sign in with your Ethereum account:`,
-    address,
-    "",
-    "Sign in to Saturn",
-    "",
-    `URI: ${uri}`,
-    "Version: 1",
-    `Chain ID: ${chainId}`,
-    `Nonce: ${randomNonce()}`,
-    `Issued At: ${issuedAt.toISOString()}`,
-    `Expiration Time: ${expirationTime.toISOString()}`,
-  ].join("\n");
-}
+// Dynamic handles connect + the sign-in signature (steps merged), then we run
+// the Sumsub identity check against the connected wallet.
+type Phase = "auth" | "checking" | "kyc" | "onboarded" | "error";
 
 const STEPS = ["Connect", "Verify", "Identity"] as const;
 
-function stepIndex(phase: Phase): number {
-  if (phase === "connect" || phase === "connecting") return 0;
-  if (phase === "verify" || phase === "verifying") return 1;
-  return 2; // checking / kyc / onboarded
-}
+export function KycFlow() {
+  const isLoggedIn = useIsLoggedIn();
+  const { primaryWallet, setShowAuthFlow } = useDynamicContext();
+  const address = primaryWallet?.address ?? null;
 
-export function KycFlow({
-  onAddress,
-}: {
-  onAddress?: (address: string | null) => void;
-}) {
-  const [phase, setPhase] = useState<Phase>("connect");
-  const [address, setAddress] = useState<string | null>(null);
+  const [phase, setPhase] = useState<Phase>("auth");
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const sdkRef = useRef<LaunchedSdk | null>(null);
+
+  // Step progression: Connect → Verify → Identity. A connected-but-not-yet-
+  // authenticated wallet (signature pending) sits on "Verify".
+  const activeStep =
+    phase === "onboarded"
+      ? 3
+      : phase !== "auth"
+        ? 2
+        : primaryWallet
+          ? 1
+          : 0;
 
   const getToken = useCallback(async (addr: string): Promise<string> => {
     const res = await fetch("/api/kyc/token", {
@@ -112,64 +68,17 @@ export function KycFlow({
     }
   }, []);
 
-  async function connect() {
-    if (!window.ethereum) {
-      setError("No browser wallet found. Open this page in a wallet browser or install MetaMask.");
-      setPhase("error");
-      return;
-    }
-    setPhase("connecting");
-    setError(null);
-    try {
-      try {
-        await window.ethereum.request({
-          method: "wallet_requestPermissions",
-          params: [{ eth_accounts: {} }],
-        });
-      } catch (permErr) {
-        if ((permErr as { code?: number })?.code === 4001) {
-          setError("Connection request was rejected.");
-          setPhase("connect");
-          return;
-        }
-      }
-      const accounts = (await window.ethereum.request({
-        method: "eth_requestAccounts",
-      })) as string[];
-      const next = accounts[0];
-      if (!next) {
-        setPhase("connect");
-        return;
-      }
-      setAddress(next);
-      onAddress?.(next);
-      setPhase("verify");
-    } catch {
-      setError("Connection request was rejected.");
-      setPhase("connect");
-    }
-  }
-
-  async function verify() {
-    if (!window.ethereum || !address) return;
-    setPhase("verifying");
-    setError(null);
-    try {
-      const chainIdHex = (await window.ethereum.request({
-        method: "eth_chainId",
-      })) as string;
-      const chainId = parseInt(chainIdHex, 16);
-      await window.ethereum.request({
-        method: "personal_sign",
-        params: [buildSignMessage(address, chainId), address],
-      });
+  // React to Dynamic auth state: once a wallet is signed in, run the status
+  // check; if the user disconnects, return to the connect step.
+  useEffect(() => {
+    if (isLoggedIn && address && phase === "auth") {
       setPhase("checking");
-      await checkStatus(address);
-    } catch {
-      setError("Signature was rejected. Sign the message to verify ownership.");
-      setPhase("verify");
+      checkStatus(address);
+    } else if (!isLoggedIn && phase !== "auth") {
+      setPhase("auth");
+      setError(null);
     }
-  }
+  }, [isLoggedIn, address, phase, checkStatus]);
 
   // Launch the Sumsub Web SDK once we reach the KYC phase.
   useEffect(() => {
@@ -206,7 +115,6 @@ export function KycFlow({
           })
           .build();
 
-        sdkRef.current = instance;
         instance.launch(containerRef.current);
       } catch {
         if (!cancelled) {
@@ -223,7 +131,6 @@ export function KycFlow({
       } catch {
         /* no-op */
       }
-      sdkRef.current = null;
     };
   }, [phase, address, getToken, checkStatus]);
 
@@ -232,8 +139,8 @@ export function KycFlow({
       {/* Stepper */}
       <div className="flex items-center justify-center gap-1.5 border-b border-border px-4 py-4 sm:justify-start sm:gap-2 sm:px-6">
         {STEPS.map((label, i) => {
-          const active = i === stepIndex(phase);
-          const done = i < stepIndex(phase) || phase === "onboarded";
+          const active = i === activeStep;
+          const done = i < activeStep;
           return (
             <div key={label} className="flex items-center gap-1.5 sm:gap-2">
               <span
@@ -263,46 +170,22 @@ export function KycFlow({
       </div>
 
       <div className="p-6 sm:p-8">
-        {/* Step 1 — connect */}
-        {(phase === "connect" || phase === "connecting") && (
+        {/* Step 1 — connect + sign, handled by Dynamic */}
+        {phase === "auth" && (
           <div className="py-6 text-center">
             <h1 className="text-2xl font-bold">Verify your identity</h1>
             <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
               Connect your wallet to begin. You will confirm ownership with a free
               signature, then complete a brief identity check.
             </p>
-            {error && <p className="mt-4 text-sm text-danger">{error}</p>}
             <div className="mx-auto mt-8 max-w-md">
-              <FramedButton onClick={connect} disabled={phase === "connecting"}>
-                {phase === "connecting" ? "Check your wallet…" : "Connect Wallet"}
+              <FramedButton onClick={() => setShowAuthFlow(true)}>
+                Connect Wallet
               </FramedButton>
             </div>
           </div>
         )}
 
-        {/* Step 2 — verify ownership */}
-        {(phase === "verify" || phase === "verifying") && address && (
-          <div className="py-6 text-center">
-            <h1 className="text-2xl font-bold">Verify ownership</h1>
-            <div className="mx-auto mt-4 inline-flex items-center gap-1.5 border border-border px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest">
-              <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-              {truncateAddress(address)}
-            </div>
-            <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted">
-              Your wallet is connected but not yet verified. Sign a quick message
-              to prove you own it and continue. It&apos;s free and does not submit
-              a transaction.
-            </p>
-            {error && <p className="mt-4 text-sm text-danger">{error}</p>}
-            <div className="mx-auto mt-8 max-w-md">
-              <FramedButton onClick={verify} disabled={phase === "verifying"}>
-                {phase === "verifying" ? "Check your wallet…" : "Sign to continue"}
-              </FramedButton>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3 — checking / KYC / done */}
         {phase === "checking" && (
           <div className="flex h-[300px] items-center justify-center">
             <span className="h-6 w-6 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
@@ -319,9 +202,6 @@ export function KycFlow({
               </svg>
             </div>
             <h1 className="mt-5 text-2xl font-bold">You&apos;re verified</h1>
-            {address && (
-              <p className="mt-2 font-tabular text-sm text-muted">{truncateAddress(address)}</p>
-            )}
             <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
               Identity verification is complete for this wallet. You should be able
               to mint and redeem USDat within 48 hours. You can close this page.
@@ -335,7 +215,13 @@ export function KycFlow({
             <button
               onClick={() => {
                 setError(null);
-                setPhase(address ? "verify" : "connect");
+                if (address) {
+                  setPhase("checking");
+                  checkStatus(address);
+                } else {
+                  setPhase("auth");
+                  setShowAuthFlow(true);
+                }
               }}
               className="mt-5 rounded-full border border-border px-5 py-2.5 text-sm font-bold text-foreground transition-colors hover:bg-surface-2"
             >

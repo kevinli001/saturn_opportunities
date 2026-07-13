@@ -1,55 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
+import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 import { KycFlow } from "./KycFlow";
-import { SaturnLogo } from "./SaturnLogo";
+import { KycNav } from "./KycNav";
 
-function truncateAddress(a: string): string {
-  return `${a.slice(0, 6)}…${a.slice(-4)}`;
-}
+// Public (client-exposed) Dynamic environment id. Override per deploy via
+// NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID (production id in the production project);
+// falls back to the pre-production environment for local/dev.
+const DYNAMIC_ENV_ID =
+  process.env.NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID ??
+  "7033dc64-845b-4405-a6e6-05b118cf68f4";
 
 export function KycExperience() {
-  const [address, setAddress] = useState<string | null>(null);
-
   return (
-    <div>
-      {/* Nav — matches the opportunities page; shows the address once connected */}
-      <div className="border-b border-border bg-surface">
-        <div className="flex items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <SaturnLogo />
-            <span className="flex items-center gap-1.5 text-[11px] font-normal uppercase tracking-widest">
-              <span className="text-primary">/</span>
-              <span className="text-muted">Built on digital credit</span>
-            </span>
+    <DynamicContextProvider
+      settings={{
+        environmentId: DYNAMIC_ENV_ID,
+        walletConnectors: [EthereumWalletConnectors],
+      }}
+    >
+      <div>
+        <KycNav />
+
+        {/* Hero banner */}
+        <div className="bg-ink text-white">
+          <div className="tick-ruler" />
+          <div className="px-4 py-8 sm:px-6 lg:px-8">
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+              Individual KYC Process
+            </h1>
+            <p className="mt-2 text-sm text-white/60">
+              Complete identity verification for full access to Saturn.
+            </p>
           </div>
-          {address && (
-            <div className="flex items-center gap-1.5 whitespace-nowrap border border-border px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-              {truncateAddress(address)}
-            </div>
-          )}
+          <div className="tick-ruler" />
+        </div>
+
+        {/* Flow */}
+        <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 lg:px-8">
+          <KycFlow />
         </div>
       </div>
-
-      {/* Hero banner */}
-      <div className="bg-ink text-white">
-        <div className="tick-ruler" />
-        <div className="px-4 py-8 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
-            Individual KYC Process
-          </h1>
-          <p className="mt-2 text-sm text-white/60">
-            Complete identity verification for full access to Saturn.
-          </p>
-        </div>
-        <div className="tick-ruler" />
-      </div>
-
-      {/* Flow */}
-      <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6 lg:px-8">
-        <KycFlow onAddress={setAddress} />
-      </div>
-    </div>
+    </DynamicContextProvider>
   );
 }
