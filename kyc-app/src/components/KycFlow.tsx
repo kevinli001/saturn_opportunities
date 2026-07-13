@@ -9,8 +9,8 @@ interface LaunchedSdk {
   destroy: () => void;
 }
 
-// Dynamic handles connect + the sign-in signature (steps merged), then we run
-// the Sumsub identity check against the connected wallet.
+// Dynamic handles connect + the sign-in signature, then we run the Sumsub
+// identity check against the connected wallet. Steps: Connect, Verify, Identity.
 type Phase = "auth" | "checking" | "kyc" | "onboarded" | "error";
 
 const STEPS = ["Connect", "Verify", "Identity"] as const;
