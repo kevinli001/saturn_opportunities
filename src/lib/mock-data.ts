@@ -822,6 +822,48 @@ export const opportunities: Opportunity[] = [
     externalUrl: "https://app.morpho.org/ethereum",
   },
   {
+    id: "looping-pt-usdat-ausd",
+    name: "Looped PT-USDat",
+    protocol: "Morpho",
+    morphoStrategy: "Looping",
+    asset: "USDat",
+    pairAsset: "AUSD",
+    yieldType: "Variable",
+    apy: 15.0,
+    apyMin: 0.0,
+    apyMax: 35.0,
+    riskLevel: "Medium",
+    leverage: 10,
+    tvl: 3_200_000,
+    chain: "Ethereum",
+    description:
+      "Recursively loop PT-USDat against AUSD on Morpho's PT-USDat/AUSD market to reach leveraged exposure — the same strategy as the USDC loop, but borrowing AUSD.",
+    longDescription:
+      "Identical mechanics to the PT-USDat/USDC loop, but the borrowed asset is AUSD on Morpho's PT-USDat/AUSD market. Net yield is leveraged PT-USDat fixed yield minus the leveraged AUSD borrow cost from that exact market, held below the market's LLTV for a safety buffer.",
+    riskExplanation:
+      "Medium risk. USDat is backed by short-duration T-bills, so collateral value is stable even under leverage — the dominant risk is a widening spread if AUSD borrow rates rise. PT-USDat converges predictably to face value, keeping price-divergence liquidation risk low.",
+    requirements: [
+      "No official minimum — size the position so looping gas costs are worthwhile",
+      "Comfortable actively monitoring borrow rates and LTV",
+      "Any Ethereum wallet",
+    ],
+    howToParticipate: [
+      "Acquire PT-USDat on Pendle",
+      "Deposit PT-USDat as collateral on the Morpho PT-USDat/AUSD market",
+      "Borrow AUSD against the collateral at a target LTV",
+      "Swap borrowed AUSD for more PT-USDat and redeposit; repeat to reach target leverage",
+    ],
+    historicalYield: [
+      { month: "Feb", apy: 14.2 },
+      { month: "Mar", apy: 20.1 },
+      { month: "Apr", apy: 24.0 },
+      { month: "May", apy: 15.6 },
+      { month: "Jun", apy: 14.8 },
+      { month: "Jul", apy: 18.2 },
+    ],
+    externalUrl: "https://app.morpho.org/ethereum",
+  },
+  {
     id: "looping-pt-susdat",
     name: "Looped PT-sUSDat",
     protocol: "Morpho",

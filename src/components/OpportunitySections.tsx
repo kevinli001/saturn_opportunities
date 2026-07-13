@@ -26,6 +26,7 @@ function Subgroup({
   showTvl = false,
   showSpread = false,
   showMaxDrop = false,
+  showLoanAsset = false,
 }: {
   label: string;
   items: Opportunity[];
@@ -34,6 +35,7 @@ function Subgroup({
   showTvl?: boolean;
   showSpread?: boolean;
   showMaxDrop?: boolean;
+  showLoanAsset?: boolean;
 }) {
   return (
     <div>
@@ -47,6 +49,7 @@ function Subgroup({
         showTvl={showTvl}
         showSpread={showSpread}
         showMaxDrop={showMaxDrop}
+        showLoanAsset={showLoanAsset}
       />
     </div>
   );
@@ -111,7 +114,7 @@ export function OpportunitySections({
           description="Supply USDC to Saturn's Morpho vault and markets, or run a leveraged loop with Saturn's assets."
         />
         <div className="space-y-6">
-          <Subgroup label="Looping" items={morphoLooping} showSpread showMaxDrop />
+          <Subgroup label="Looping" items={morphoLooping} showSpread showLoanAsset />
           <Subgroup label="Lending" items={morphoLending} showBorrowApy showTvl />
         </div>
       </section>

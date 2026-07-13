@@ -1,7 +1,6 @@
 import type { Opportunity } from "@/lib/types";
 import { formatApy, formatUsd } from "@/lib/format";
 import { AssetBadge } from "./AssetBadge";
-import { RiskBadge } from "./RiskBadge";
 import { LiveBadge } from "./LiveBadge";
 
 function ApyValue({ value, isLive }: { value: number; isLive?: boolean }) {
@@ -58,6 +57,21 @@ function MaxDropValue({ value }: { value?: number }) {
   );
 }
 
+// Looping collateral category: USDat is backed by T-bills; the staked/tranche
+// assets (sUSDat, srUSDat, …) are STRC-based (Bitcoin-backed).
+function CollateralBadge({ asset }: { asset: string }) {
+  const isTreasuries = asset === "USDat";
+  const label = isTreasuries ? "T-bills" : "STRC";
+  const src = isTreasuries ? "/logos/treasury.png" : "/logos/strc.png";
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap border border-border bg-surface px-2 py-1 text-xs font-semibold text-foreground">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt="" className="h-4 w-4 shrink-0 rounded object-contain" />
+      {label}
+    </span>
+  );
+}
+
 export function OpportunityTable({
   items,
   showBorrowApy = false,
@@ -65,6 +79,7 @@ export function OpportunityTable({
   showTvl = false,
   showSpread = false,
   showMaxDrop = false,
+  showLoanAsset = false,
 }: {
   items: Opportunity[];
   showBorrowApy?: boolean;
@@ -72,11 +87,12 @@ export function OpportunityTable({
   showTvl?: boolean;
   showSpread?: boolean;
   showMaxDrop?: boolean;
+  showLoanAsset?: boolean;
 }) {
   const apyLabel = showBorrowApy
     ? "Lending APY"
     : showSpread
-      ? "Looped APY"
+      ? "MAX APY"
       : "APY";
   return (
     <>
@@ -86,15 +102,11 @@ export function OpportunityTable({
           <div key={o.id} className="border border-border bg-surface p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="font-bold text-foreground">
-                  {o.name}
-                  {typeof o.leverage === "number" && (
-                    <span className="ml-1 font-normal text-muted">({o.leverage}x)</span>
-                  )}
-                </p>
+                <p className="font-bold text-foreground">{o.name}</p>
                 <p className="text-xs uppercase tracking-wide text-muted">
                   {o.chain}
                   {o.maturityLabel ? ` · ${o.maturityLabel}` : ""}
+                  {showLoanAsset && o.pairAsset ? ` · ${o.pairAsset}` : ""}
                 </p>
               </div>
               <div className="text-right">
@@ -147,8 +159,8 @@ export function OpportunityTable({
               <CardRow label="Token">
                 <AssetBadge asset={o.asset} />
               </CardRow>
-              <CardRow label="Risk">
-                <RiskBadge level={o.riskLevel} />
+              <CardRow label="Collateral">
+                <CollateralBadge asset={o.asset} />
               </CardRow>
             </div>
           </div>
@@ -164,7 +176,7 @@ export function OpportunityTable({
             <tr className="border-b border-border text-xs uppercase tracking-widest text-muted">
               <th className="px-4 py-3 font-bold">Name</th>
               <th className="px-4 py-3 font-bold">Token</th>
-              <th className="px-4 py-3 font-bold">Risk</th>
+              <th className="px-4 py-3 font-bold">Collateral</th>
               {showLeverage && <th className="px-4 py-3 font-bold">Leverage</th>}
               {showMaxDrop && <th className="px-4 py-3 font-bold">Liq. Buffer</th>}
               {showTvl && <th className="px-4 py-3 font-bold">TVL</th>}
@@ -177,22 +189,18 @@ export function OpportunityTable({
             {items.map((o) => (
               <tr key={o.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3">
-                  <p className="font-bold text-foreground">
-                    {o.name}
-                    {typeof o.leverage === "number" && (
-                      <span className="ml-1 font-normal text-muted">({o.leverage}x)</span>
-                    )}
-                  </p>
+                  <p className="font-bold text-foreground">{o.name}</p>
                   <p className="text-xs uppercase tracking-wide text-muted">
                     {o.chain}
                     {o.maturityLabel ? ` · ${o.maturityLabel}` : ""}
+                    {showLoanAsset && o.pairAsset ? ` · ${o.pairAsset}` : ""}
                   </p>
                 </td>
                 <td className="px-4 py-3">
                   <AssetBadge asset={o.asset} />
                 </td>
                 <td className="px-4 py-3">
-                  <RiskBadge level={o.riskLevel} />
+                  <CollateralBadge asset={o.asset} />
                 </td>
                 {showLeverage && (
                   <td className="px-4 py-3 font-tabular text-muted">

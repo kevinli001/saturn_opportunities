@@ -13,6 +13,7 @@ import { getPancakeLiveData } from "./live/pancakeswap";
 // (leverage-1 times the starting collateral) pays borrow interest.
 const LOOPING_ID_MAP: Record<string, { assetApyId: string; morphoId: string; leverage: number }> = {
   "looping-pt-usdat": { assetApyId: "pt-usdat", morphoId: "morpho-pt-usdat-usdc", leverage: 10 },
+  "looping-pt-usdat-ausd": { assetApyId: "pt-usdat", morphoId: "morpho-pt-usdat-ausd", leverage: 10 },
   "looping-pt-susdat": { assetApyId: "pt-susdat", morphoId: "morpho-pt-susdat-usdc", leverage: 3 },
   "looping-pt-srusdat": { assetApyId: "pt-srusdat", morphoId: "morpho-pt-srusdat-usdc", leverage: 5 },
   "looping-susdat": { assetApyId: "hold-susdat", morphoId: "morpho-susdat-ausd", leverage: 3 },
@@ -128,21 +129,21 @@ export async function getOpportunities(): Promise<Opportunity[]> {
       return opportunity;
     }
 
-    const { leverage } = loopCfg;
-    const spreadApy = assetApySource.apy - morphoMarket.borrowApy;
-    const apy = leverage * assetApySource.apy - (leverage - 1) * morphoMarket.borrowApy;
-
+    // Max leverage achievable by looping to the market's LLTV limit:
+    // 1 / (1 - LLTV). Falls back to the configured leverage if LLTV isn't live.
     const morphoLive = morpho.get(loopCfg.morphoId);
     const lltv = morphoLive?.lltv;
-    const maxDrop = typeof lltv === "number"
-      ? Math.round((1 - (leverage - 1) / (leverage * lltv)) * 10000) / 100
-      : undefined;
+    const maxLeverage =
+      typeof lltv === "number" ? 1 / (1 - lltv) : loopCfg.leverage;
+
+    const spreadApy = assetApySource.apy - morphoMarket.borrowApy;
+    // MAX APY = looping all the way to the leverage cap.
+    const apy =
+      maxLeverage * assetApySource.apy - (maxLeverage - 1) * morphoMarket.borrowApy;
 
     return withLiveApy(opportunity, apy, {
       tvl: opportunity.tvl,
-      leverage,
       spreadApy: Math.round(spreadApy * 100) / 100,
-      maxDrop,
       isLive: Boolean(assetApySource.isLive && morphoMarket.isLive),
     });
   });
